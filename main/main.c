@@ -157,9 +157,8 @@ void DHT_Publisher_task(void *pvParameter)
         	char temperature[12];
         	sprintf(temperature, "%.2f", temp);
 
-        	printf("Humidity: %.1f%% Temp: %.1fC\n", hum, temp);
-
         	if (MQTT_CONNECTED){
+                printf("Humidity: %.1f%% Temp: %.1fC\n", hum, temp);
 				esp_mqtt_client_publish(client, MQTT_PUB_HUM_DHT, humidity, 0, 0, 0);
 				esp_mqtt_client_publish(client, MQTT_PUB_TEMP_DHT, temperature, 0, 0, 0);
 			}
