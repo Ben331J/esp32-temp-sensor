@@ -48,6 +48,8 @@ uint32_t MQTT_CONNECTED = 0;
 #define SENSOR_TYPE DHT_TYPE_DHT11
 #define DHT_GPIO_PIN GPIO_NUM_10
 
+static RTC_DATA_ATTR struct timeval sleep_enter_time;
+
 static void mqtt_app_start(void);
 
 static esp_err_t wifi_event_handler(void *arg, esp_event_base_t event_base,
@@ -155,35 +157,58 @@ static void mqtt_app_start(void)
     esp_mqtt_client_start(client);
 }
 
-void DHT_Publisher_task(void *pvParameter)
-{
+void DHT_Publisher_task(void *pvParameter) {
+
 	float temp, hum;
 
-    while (1)
-    {
-        if (dht_read_float_data(SENSOR_TYPE, DHT_GPIO_PIN, &hum, &temp) == ESP_OK) {
+    while (1) {
+        if (MQTT_CONNECTED) {
+            if (dht_read_float_data(SENSOR_TYPE, DHT_GPIO_PIN, &hum, &temp) == ESP_OK) {
 
-            char humidity[12];
-        	sprintf(humidity, "%.2f", hum);
+                char humidity[12];
+                sprintf(humidity, "%.2f", hum);
 
-        	char temperature[12];
-        	sprintf(temperature, "%.2f", temp);
+                char temperature[12];
+                sprintf(temperature, "%.2f", temp);
 
-        	printf("Humidity: %.1f%% Temp: %.1fC\n", hum, temp);
+                printf("Humidity: %.1f%% Temp: %.1fC\n", hum, temp);
 
-        	if (MQTT_CONNECTED){
-				esp_mqtt_client_publish(client, MQTT_PUB_HUM_DHT, humidity, 0, 0, 0);
-				esp_mqtt_client_publish(client, MQTT_PUB_TEMP_DHT, temperature, 0, 0, 0);
-			}
-        } else
-            printf("Could not read data from sensor\n");
+                esp_mqtt_client_publish(client, MQTT_PUB_HUM_DHT, humidity, 0, 0, 0);
+                esp_mqtt_client_publish(client, MQTT_PUB_TEMP_DHT, temperature, 0, 0, 0);
 
-        vTaskDelay(pdMS_TO_TICKS(5000));
+                const int wakeup_time_sec = 20;
+                printf("Enabling timer wakeup, %ds\n", wakeup_time_sec);
+                esp_sleep_enable_timer_wakeup(wakeup_time_sec * 1000000);
+
+                printf("Entering deep sleep\n");
+                esp_deep_sleep_start()
+
+            } else {
+                printf("Could not read data from sensor\n");
+                vTaskDelay(pdMS_TO_TICKS(5000));
+            }
+            
+        } else {
+            vTaskDelay(pdMS_TO_TICKS(5000));
+        }   
     }
 }
 
-void app_main()
-{
+void app_main() {
+    struct timeval now;
+    gettimeofday(&now, NULL);
+    int sleep_time_ms = (now.tv_sec - sleep_enter_time.tv_sec) * 1000 + (now.tv_usec - sleep_enter_time.tv_usec) / 1000;
+
+    switch (esp_sleep_get_wakeup_cause()) {
+        case ESP_SLEEP_WAKEUP_TIMER: {
+            printf("Wake up from timer. Time spent in deep sleep: %dms\n", sleep_time_ms);
+            break;
+        }
+        case ESP_SLEEP_WAKEUP_UNDEFINED:
+        default:
+            printf("Not a deep sleep reset\n");
+    }
+
 	nvs_flash_init();
     wifi_init();
 	xTaskCreate(&DHT_Publisher_task, "DHT_Publisher_task", 2048, NULL, 5, NULL );
