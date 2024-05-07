@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+#include <stdlib.h>
 #include "esp_wifi.h"
 #include "esp_system.h"
 #include "nvs_flash.h"
@@ -20,6 +21,17 @@
 #include "esp_log.h"
 #include "mqtt_client.h"
 #include "dht.h"
+
+#include <time.h>
+#include <sys/time.h>
+#include "sdkconfig.h"
+#include "soc/soc_caps.h"
+#include "esp_sleep.h"
+#include "driver/rtc_io.h"
+#include "nvs.h"
+
+#include "driver/gpio.h"
+#include "driver/adc.h"
 
 static const char *TAG = "temp_sensor";
 
