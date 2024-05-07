@@ -181,7 +181,7 @@ void DHT_Publisher_task(void *pvParameter) {
                 esp_sleep_enable_timer_wakeup(wakeup_time_sec * 1000000);
 
                 printf("Entering deep sleep\n");
-                esp_deep_sleep_start()
+                esp_deep_sleep_start();
 
             } else {
                 printf("Could not read data from sensor\n");
