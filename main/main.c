@@ -35,9 +35,23 @@
 
 static const char *TAG = "temp_sensor";
 
-#define WIFI_SSID "Les Benjamins - IoT"
-#define WIFI_PASS "F6eEzG8+"
-#define MAX_RETRY 10
+#define WIFI_SSID             CONFIG_WIFI_SSID
+#define WIFI_PASS             CONFIG_WIFI_PASSWORD
+#define MAX_RETRY         CONFIG_MAXIMUM_RETRY
+#define STATIC_IP_ADDR        CONFIG_STATIC_IP_ADDR
+#define STATIC_NETMASK_ADDR   CONFIG_STATIC_NETMASK_ADDR
+#define STATIC_GW_ADDR        CONFIG_STATIC_GW_ADDR
+#ifdef CONFIG_STATIC_DNS_AUTO
+#define MAIN_DNS_SERVER       STATIC_GW_ADDR
+#define BACKUP_DNS_SERVER     "0.0.0.0"
+#else
+#define MAIN_DNS_SERVER       CONFIG_STATIC_DNS_SERVER_MAIN
+#define BACKUP_DNS_SERVER     CONFIG_STATIC_DNS_SERVER_BACKUP
+#endif
+#ifdef CONFIG_STATIC_DNS_RESOLVE_TEST
+#define RESOLVE_DOMAIN        CONFIG_STATIC_RESOLVE_DOMAIN
+#endif
+
 static int retry_cnt = 0;
 
 #define MQTT_PUB_TEMP_DHT "benjamins_bedroom/dht/temperature"
