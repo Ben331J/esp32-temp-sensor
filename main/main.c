@@ -162,7 +162,8 @@ void DHT_Publisher_task(void *pvParameter) {
 	float temp, hum;
 
     while (1) {
-        if (MQTT_CONNECTED) {
+        if (MQTT_CONNECTED)
+        {
             if (dht_read_float_data(SENSOR_TYPE, DHT_GPIO_PIN, &hum, &temp) == ESP_OK) {
 
                 char humidity[12];
@@ -173,22 +174,42 @@ void DHT_Publisher_task(void *pvParameter) {
 
                 printf("Humidity: %.1f%% Temp: %.1fC\n", hum, temp);
 
-                esp_mqtt_client_publish(client, MQTT_PUB_HUM_DHT, humidity, 0, 0, 0);
-                esp_mqtt_client_publish(client, MQTT_PUB_TEMP_DHT, temperature, 0, 0, 0);
+                if (esp_mqtt_client_publish(client, MQTT_PUB_HUM_DHT, humidity, 0, 0, 0) == 0)
+                {
+                    ESP_LOGI(TAG, "Humidity sent to MQTT Broker");
 
-                const int wakeup_time_sec = 20;
-                printf("Enabling timer wakeup, %ds\n", wakeup_time_sec);
-                esp_sleep_enable_timer_wakeup(wakeup_time_sec * 1000000);
+                    if (esp_mqtt_client_publish(client, MQTT_PUB_TEMP_DHT, temperature, 0, 0, 0) == 0)
+                    {
+                        ESP_LOGI(TAG, "Temperature sent to MQTT Broker");
 
-                printf("Entering deep sleep\n");
-                esp_deep_sleep_start();
+                        const int wakeup_time_sec = 290;
+                        printf("Enabling timer wakeup, %ds\n", wakeup_time_sec);
+                        esp_sleep_enable_timer_wakeup(wakeup_time_sec * 1000000);
+        
+                        printf("Entering deep sleep\n");
+                        vTaskDelay(pdMS_TO_TICKS(1000));
+                        esp_deep_sleep_start();
 
-            } else {
+                    } else 
+                    {
+                        ESP_LOGE(TAG, "Temperature not sent to MQTT Broker");
+                    }
+                } else 
+                {
+                    ESP_LOGE(TAG, "Humidity not sent to MQTT Broker");
+                }
+
+
+                
+
+            } else 
+            {
                 printf("Could not read data from sensor\n");
                 vTaskDelay(pdMS_TO_TICKS(5000));
             }
             
-        } else {
+        } else
+        {
             vTaskDelay(pdMS_TO_TICKS(5000));
         }   
     }
